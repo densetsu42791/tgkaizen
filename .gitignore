@@ -1,0 +1,17 @@
+# Секретные и сессионные данные
+bot.session
+config.ini
+bufer.txt
+
+# Кеш Python
+__pycache__/
+*.pyc
+
+# Виртуальное окружение
+venv_tg/
+
+# Логи
+*.log
+
+# Tests
+test.py
