@@ -41,12 +41,13 @@ async def receive_forwarded_channel_message(client: Client, message: Message):
     try:
         if chat.type != ChatType.CHANNEL:
             raise NotAChannelError("Это не канал.")
-
+        type_channel = 'channel'
+        is_private_channel = True
         # Проверка доступа бота к каналу
         await check_bot_in_channel(client, chat)
 
         # Добавление канала
-        await add_channel_to_user(client, user_id, chat)
+        await add_channel_to_user(client, user_id, chat, type_channel, is_private_channel)
 
         channel_username = chat.username or f"(ID: {chat.id})"
         await message.reply_text(f"✅ Приватный канал {channel_username} успешно подключён!")

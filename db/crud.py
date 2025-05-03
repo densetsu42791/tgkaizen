@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 
-async def add_channel_to_user(client: Client, user_id: int, chat: Chat) -> str:
+async def add_channel_to_user(client: Client, user_id: int, chat: Chat, type_channel: str, is_private_channel: bool) -> str:
     """Добавляет канал в БД и привязывает его к пользователю"""
     channel_username = chat.username or "Private"
     async with async_session() as session:
@@ -22,7 +22,9 @@ async def add_channel_to_user(client: Client, user_id: int, chat: Chat) -> str:
                 channel_id=chat.id,
                 username=channel_username,
                 description=chat.description,
-                start_count_subs=chat.members_count or 0,
+                type_channel=type_channel,
+                is_private_channel=is_private_channel,
+                #start_count_subs=chat.members_count or 0,
                 join_at=datetime.now()
             )
             session.add(channel)
