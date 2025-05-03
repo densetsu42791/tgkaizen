@@ -1,13 +1,9 @@
 from pyrogram import Client
 import configparser
-#from db.database import init_db
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 config = configparser.ConfigParser()
 config.read("config.ini")
 
