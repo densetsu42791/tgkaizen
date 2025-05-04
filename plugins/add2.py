@@ -2,7 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
 from pyrogram.errors import ChannelPrivate, UserNotParticipant
-
+from services.userbot_func import get_count_channel
 from db.crud import add_channel_to_user
 from services.user_state import user_waiting_input, waiting_private_channel
 from services.channel_service import check_bot_in_channel
@@ -45,6 +45,7 @@ async def receive_forwarded_channel_message(client: Client, message: Message):
         is_private_channel = True
         # Проверка доступа бота к каналу
         await check_bot_in_channel(client, chat)
+        
 
         # Добавление канала
         await add_channel_to_user(client, user_id, chat, type_channel, is_private_channel)
