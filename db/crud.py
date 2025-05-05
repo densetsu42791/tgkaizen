@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pyrogram.types import Chat
 from pyrogram import Client
 from pyrogram.enums import ChatType
-from services.userbot_func import get_count_channel
+
 
 import logging
 logger = logging.getLogger(__name__)
