@@ -1,14 +1,12 @@
-from db.database import async_session
-from db.models import Base, User, Channel
-from sqlalchemy import select
-from datetime import datetime, timezone
-from pyrogram.types import Chat
-from pyrogram import Client
-from pyrogram.enums import ChatType
 from sqlalchemy.ext.asyncio import AsyncSession
+from db.models import Base, User, Channel
+from sqlalchemy import select, update
+from datetime import datetime
+
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 async def get_user_by_id(user_id: int, session: AsyncSession) -> User | None:
     stmt = select(User).where(User.user_id == user_id)
@@ -22,6 +20,39 @@ async def create_user(user_data: dict, session: AsyncSession) -> User:
     await session.commit()
     await session.refresh(user)
     return user
+
+
+async def update_user_last_vizit(user_id: int, session: AsyncSession) -> None:
+    stmt = (
+        update(User)
+        .where(User.user_id == user_id)
+        .values(last_vizit=datetime.utcnow())
+    )
+    await session.execute(stmt)
+    await session.commit()
+
+
+async def get_channel_by_id(channel_id: int, session: AsyncSession) -> Channel | None:
+    result = await session.execute(select(Channel).where(Channel.channel_id == channel_id))
+    return result.scalar_one_or_none()
+
+
+async def create_channel(data: dict, session: AsyncSession) -> Channel:
+    channel = Channel(**data)
+    session.add(channel)
+    await session.commit()
+    await session.refresh(channel)
+    return channel
+
+
+async def update_user_channel_id(user_id: int, channel_id: int, session: AsyncSession) -> None:
+    await session.execute(
+        update(User).where(User.user_id == user_id).values(channel_id=channel_id)
+    )
+    await session.commit()
+
+
+
 
 # async def add_channel_to_user(client: Client, user_id: int, chat: Chat, type_channel: str, is_private_channel: bool) -> str:
 #     """Добавляет канал в БД и привязывает его к пользователю"""

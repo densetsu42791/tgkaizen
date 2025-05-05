@@ -1,9 +1,6 @@
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from pyrogram.types import CallbackQuery
-from pyrogram.enums import ChatType
+from pyrogram.types import Message
 from services.user_service import check_or_create_user
-
 
 
 import logging
@@ -11,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @Client.on_message(filters.private & filters.command("start"))
-async def start_command(client: Client, message: Message):
+async def cmd_start(client: Client, message: Message):
     user_id = message.from_user.id
 
     logger.info(f"User {user_id} started the bot.")
