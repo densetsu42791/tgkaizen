@@ -1,22 +1,13 @@
-from pyrogram import Client
-from pyrogram.types import Chat
 import configparser
-import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy import select
-from db.models import Base, User, Channel
-from datetime import datetime, timezone
-from pyrogram.enums import ChatType
 
 
-# Парсим config.ini
 config = configparser.ConfigParser()
 config.read("config.ini")
 DB_URL = config["database"]["url"]
 
 
-# Создаем движок и сессию
-engine = create_async_engine(DB_URL, echo=False)
+engine = create_async_engine(DB_URL, echo=True)
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 
