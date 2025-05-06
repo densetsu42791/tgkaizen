@@ -4,6 +4,7 @@ from sqlalchemy import select, update
 from datetime import datetime, timezone
 from db.models import Subscriber
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 
 import logging
@@ -54,15 +55,18 @@ async def update_user_channel_id(user_id: int, channel_id: int, session: AsyncSe
     await session.commit()
 
 
-async def add_subscriber(sub_data: dict, session):
-    subscriber = Subscriber(**sub_data)
-    session.add(subscriber)
-    try:
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()  # уже есть в БД — пропустим
 
 async def add_many_subscribers(subs_data: list[dict], session):
-    for data in subs_data:
-        await add_subscriber(data, session)
+    if not subs_data:
+        return
 
+    try:
+        # Используем ON CONFLICT для игнорирования дубликатов
+        stmt = pg_insert(Subscriber).values(subs_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['user_id', 'channel_id'])
+
+        await session.execute(stmt)
+        await session.commit()
+
+    except IntegrityError:
+        await session.rollback()
