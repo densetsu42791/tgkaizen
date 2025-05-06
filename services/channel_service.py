@@ -38,7 +38,18 @@ async def process_channel_addition(client: Client, user_id: int, command_call=Fa
             return "📩 Перешлите сообщение из канала."
 
         chat = message.forward_from_chat
+        logger.info(f"✅ CHAT {chat}")
+
+        full_chat = await client.get_chat(chat.id)
+        logger.info(f"✅ FULL CHAT {full_chat}")
+
+
         
+
+
+        # invite_link_ex = await client.export_chat_invite_link(chat.id) # Постоянная ссылка (бот.админ TgKaizen) https://t.me/+6-JZwkuQV6MwMmZi
+        # logger.info(f"✅ INVITE LINK EXPORT {invite_link_ex}")
+
         if chat.type != ChatType.CHANNEL:
             return "Это не канал."
 
@@ -64,17 +75,20 @@ async def process_channel_addition(client: Client, user_id: int, command_call=Fa
         if existing_channel:
             return f"⚠️ Канал {chat.id} уже добавлен другим пользователем."
         
-        start_count = await client.get_chat_members_count(chat.id)
+        #start_count = await client.get_chat_members_count(chat.id)
+        #invite_link = await client.export_chat_invite_link(chat.id)
+        # print(f"InvateLink={chat.invite_link}")
+        # print(f"Descript={chat.description}")
 
         # Добавление канала
         channel_data = {
-            "channel_id": chat.id,
-            "title": chat.title,
-            "username": chat.username,
-            "description": chat.description,
-            "type_chat": chat.type.value,
-            "invite_link": chat.invite_link,
-            "start_count_subs": start_count,
+            "channel_id": full_chat.id,
+            "title": full_chat.title,
+            "username": full_chat.username,
+            "description": full_chat.description,
+            "type_chat": full_chat.type.value,
+            "invite_link": full_chat.invite_link,
+            "start_count_subs": full_chat.members_count,
             "join_at": datetime.utcnow(),
         }
 
