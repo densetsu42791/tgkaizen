@@ -2,7 +2,7 @@ from pyrogram import Client
 from db.database import async_session
 from db.crud import get_user_by_id, create_user, update_user_last_vizit
 from pyrogram.types import User as PyroUser
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 import logging
@@ -24,8 +24,8 @@ async def check_or_create_user(client: Client, user_id: int) -> str:
                 "username": pyro_user.username,
                 "first_name": pyro_user.first_name,
                 "last_name": pyro_user.last_name,
-                "join_at": datetime.utcnow(),
-                "last_vizit": datetime.utcnow(),
+                "join_at": datetime.now(timezone.utc),
+                "last_vizit": datetime.now(timezone.utc),
                 "leave_at": None,
                 "channel_id": None
             }

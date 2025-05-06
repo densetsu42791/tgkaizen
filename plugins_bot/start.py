@@ -1,6 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from services.user_service import check_or_create_user
+from src.users import check_or_create_user
 
 
 import logging
