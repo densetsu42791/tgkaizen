@@ -1,7 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.models import Base, User, Channel
+from db.models import User, Channel, Subscriber
 from sqlalchemy import select, update
 from datetime import datetime, timezone
+from db.models import Subscriber
+from sqlalchemy.exc import IntegrityError
 
 
 import logging
@@ -50,4 +52,17 @@ async def update_user_channel_id(user_id: int, channel_id: int, session: AsyncSe
         update(User).where(User.user_id == user_id).values(channel_id=channel_id)
     )
     await session.commit()
+
+
+async def add_subscriber(sub_data: dict, session):
+    subscriber = Subscriber(**sub_data)
+    session.add(subscriber)
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()  # уже есть в БД — пропустим
+
+async def add_many_subscribers(subs_data: list[dict], session):
+    for data in subs_data:
+        await add_subscriber(data, session)
 

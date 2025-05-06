@@ -1,10 +1,10 @@
 from pyrogram import Client
 from pyrogram.types import Message
 from pyrogram.enums import ChatType
-from pyrogram.errors import PeerIdInvalid, ChannelInvalid, UserNotParticipant, RPCError
+from pyrogram.errors import PeerIdInvalid, ChannelInvalid, UserNotParticipant, RPCError, ChatAdminRequired
 
 from db.database import async_session
-from db.crud import get_user_by_id, update_user_channel_id, create_channel, get_channel_by_id
+from db.crud import get_user_by_id, update_user_channel_id, create_channel, get_channel_by_id, add_subscriber
 
 from src.user_state import waiting_channel
 from datetime import datetime, timezone
@@ -78,3 +78,18 @@ async def process_channel_addition(client: Client, user_id: int, command_call=Fa
         return f"✅ Канал {chat.id} успешно добавлен!"
 
 
+async def fetch_and_store_subscribers(client: Client, channel_id: int, session):
+    try:
+        async for member in client.get_chat_members(channel_id):
+            sub_data = {
+                "user_id": member.user.id,
+                "username": member.user.username,
+                "first_name": member.user.first_name,
+                "last_name": member.user.last_name,
+                "is_bot": member.user.is_bot,
+                "channel_id": channel_id,
+                "join_at": datetime.now(timezone.utc),
+            }
+            await add_subscriber(sub_data, session)
+    except ChatAdminRequired:
+        raise PermissionError("❌ У бота нет прав просматривать подписчиков.")

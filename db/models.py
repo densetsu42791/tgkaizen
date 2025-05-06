@@ -50,3 +50,22 @@ class Channel(Base):
         uselist=False
     )
 
+
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger)  # ID подписчика в Telegram
+    username: Mapped[str | None] = mapped_column(String(100))
+    first_name: Mapped[str | None] = mapped_column(String(100))
+    last_name: Mapped[str | None] = mapped_column(String(100))
+    is_bot: Mapped[bool] = mapped_column(Boolean)
+    join_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
+
+    channel_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("channels.channel_id", ondelete="CASCADE")
+    )
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'channel_id', name='unique_subscriber_per_channel'),
+    )
