@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import BigInteger, String, DateTime, ForeignKey, Boolean, UniqueConstraint, text
 from datetime import datetime
+from database import Base
 
 
 class Base(AsyncAttrs, DeclarativeBase):
@@ -12,7 +13,7 @@ class User(Base):
     __tablename__ = "users"
 
     user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    username: Mapped[str | None] = mapped_column(String(100))
+    username: Mapped[str | None] = mapped_column(String(100), nullable=True)
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     join_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -53,6 +54,9 @@ class Channel(Base):
 
 class Subscriber(Base):
     __tablename__ = "subscribers"
+    user1: Mapped[int] = mapped_column(BigInteger)
+    user2: Mapped[str] = mapped_column(String) 
+    user3: Mapped[bool] = mapped_column(Boolean)
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger)  # ID подписчика в Telegram
     username: Mapped[str | None] = mapped_column(String(100))
@@ -60,6 +64,7 @@ class Subscriber(Base):
     last_name: Mapped[str | None] = mapped_column(String(100))
     is_bot: Mapped[bool] = mapped_column(Boolean)
     join_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
+    is_startsubs: Mapped[bool] = mapped_column(Boolean, default=False)
 
     channel_id: Mapped[int] = mapped_column(
         BigInteger,
