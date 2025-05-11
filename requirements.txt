@@ -1,0 +1,5 @@
+Pyrogram
+TgCrypto
+SQLAlchemy
+asyncpg
+alembic

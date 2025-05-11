@@ -1,0 +1,15 @@
+# Секретные и сессионные данные
+sessions/
+bot.session
+user.session
+config.ini
+
+# Кеш Python
+__pycache__/
+*.pyc
+
+# Виртуальное окружение
+venv_tg2/
+
+# Логи
+*.log
