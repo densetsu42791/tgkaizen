@@ -1,7 +1,7 @@
 import asyncio
 from pyrogram import compose
 import logging
-from clients import create_bot, create_userbot
+from app.bot import create_bot, create_userbot
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")

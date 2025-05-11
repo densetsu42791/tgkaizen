@@ -1,0 +1,109 @@
+Давай создадим тг чат-бота на Pyrogram.
+Задача бота: Бот собирает статистику телеграм-канала в который добавляется администратором.
+Я только начал и У меня сейчас такая Структура проекта:
+.
+├── clients.py
+├── config.ini
+├── main.py
+├── plugins
+│   ├── __pycache__
+│   └── start.py
+├── project_summary.py
+├── __pycache__
+│   └── clients.cpython-311.pyc
+├── requirements.txt
+├── sessions
+│   ├── bot.session
+│   └── userbot.session
+└── venv_tg2
+    ├── bin
+    ├── include
+    ├── lib
+    ├── lib64 -> lib
+    └── pyvenv.cfg
+
+
+# Содержимое файлов:
+
+# === clients.py === 
+from pyrogram import Client
+import configparser
+config = configparser.ConfigParser()
+config.read("config.ini")
+def create_bot():
+    return Client(
+        "bot",
+        api_id=int(config["bot"]["api_id"]),
+        api_hash=config["bot"]["api_hash"],
+        bot_token=config["bot"]["bot_token"],
+        plugins=dict(root=config["bot"]["plugins_root"]),
+        workdir="sessions"
+    )
+def create_userbot():
+    return Client(
+        "userbot",
+        api_id=int(config["userbot"]["api_id"]),
+        api_hash=config["userbot"]["api_hash"],
+        plugins=dict(root=config["userbot"]["plugins_root"]),
+        workdir="sessions"
+    ) 
+
+
+
+# === config.ini === 
+[bot]
+api_id = 17234028
+api_hash = 3da0b2c47cea6b694882c68d1aa421d4
+bot_token = 7908975988:AAFgREobEXIN_byz5x_N4bHuYx0yzPgy6Xs
+plugins_root = plugins
+
+[userbot]
+api_id = 26870952
+api_hash = dcaafc1bfc49f1a34a87920a3932e22e
+plugins_root = plugins_user
+
+[database]
+url_asyncpg = postgresql+asyncpg://postgres:111@localhost:5432/tgkaizen_db
+url_psycopg = postgresql+psycopg://postgres:111@localhost:5432/tgkaizen_db 
+
+
+
+# === main.py === 
+import asyncio
+from pyrogram import compose
+import logging
+from clients import create_bot, create_userbot
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+async def main():
+    bot = create_bot()
+    await compose([bot])
+asyncio.run(main()) 
+
+
+
+# === plugins/start.py === 
+from pyrogram import Client, filters
+from pyrogram.types import Message
+import logging
+logger = logging.getLogger(__name__)
+@Client.on_message(filters.private & filters.command("start"))
+async def cmd_start(client: Client, message: Message):
+    user_id = message.from_user.id
+    first_name = message.from_user.first_name
+    logger.info(f"User {first_name} started the bot.")
+    await message.reply_text(f"Hi, {first_name}")
+
+
+
+
+Придумай структуру проекта, чтобы проект был гибкий, модульный и эффективный и компактный.
+Учти следующие моменты при разработке архитектуры проекта:
+- Таблицы будут храниться в PostgreSQL В БД 'tgkaizen_db'
+- Буду использовать SQLAlchemy (последнюю версию). Будут все операции с БД.
+- Позже подключу Alembic
+- Userbot пока не буду использовать. Пока только bot.
+- Будет много разных вспомогательных функций
+- Сессии клиентов хранятся в /sessions
+- Использую асинхронный подход
