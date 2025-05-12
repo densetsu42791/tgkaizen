@@ -23,7 +23,7 @@ class Channel(Base):
 
     channel_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     title: Mapped[str] = mapped_column(String(100))
-    
+    start_count_subs: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"))
     
     subscribers: Mapped[list["Subscriber"]] = relationship(back_populates="channel", cascade="all, delete-orphan")

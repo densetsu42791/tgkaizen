@@ -59,8 +59,14 @@ async def handle_forwarded_channel(client: Client, message: Message):
             await message.reply(f"Канал \"{chat.title}\" уже добавлен.")
             return
 
-        await add_channel(session, chat.id, chat.title, user_id)
+        channel_data = {
+            "channel_id": full_chat.id,
+            "title": full_chat.title,
+            "start_count_subs": full_chat.members_count,
+            "user_id": user_id, 
+        }
+
+        await add_channel(session, full_chat.id, full_chat.title, user_id, full_chat.members_count)
         clear_state(user_id)
 
-        # ✅ Вместо вызова /start — отправляем сообщение напрямую:
         await send_start_message(client, user_id)

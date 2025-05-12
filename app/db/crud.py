@@ -29,8 +29,8 @@ async def get_channel_by_id(session: AsyncSession, channel_id: int) -> Optional[
     return result.scalar_one_or_none()
 
 
-async def add_channel(session: AsyncSession, channel_id: int, title: str, user_id: int) -> Channel:
-    channel = Channel(channel_id=channel_id, title=title, user_id=user_id)
+async def add_channel(session: AsyncSession, channel_id: int, title: str, user_id: int, start_count_subs: int) -> Channel:
+    channel = Channel(channel_id=channel_id, title=title, user_id=user_id, start_count_subs=start_count_subs)
     session.add(channel)
     await session.commit()
     return channel

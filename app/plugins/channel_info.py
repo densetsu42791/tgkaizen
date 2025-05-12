@@ -17,12 +17,12 @@ async def channel_info_handler(client: Client, callback: CallbackQuery):
             await callback.answer("Канал не найден.", show_alert=True)
             return
 
-        start_count = await get_channel_start_count(session, channel_id)
+        #start_count = await get_channel_start_count(session, channel_id)
 
         text = (
             f"✅ Канал <b>{channel.title}</b> успешно подключен.\n"
             f"<code>channel_id: {channel.channel_id}</code>\n"
-            f"👥 start_count: {start_count or 0}"
+            f"👥 start_count: {channel.start_count_subs or 0}"
         )
 
         buttons = InlineKeyboardMarkup([
