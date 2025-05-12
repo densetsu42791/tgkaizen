@@ -1,35 +1,53 @@
-Давай создадим тг чат-бота на Pyrogram.
-Задача бота: Бот собирает статистику телеграм-канала в который добавляется администратором.
-Я только начал и У меня сейчас такая Структура проекта:
-.
-├── clients.py
+Продолжаем создавать чат-бота для сбора аналитики по приватному тг-каналу.
+Сейчас структура моего проекта выглядит так:
+├── alembic.ini
+├── app
+│   ├── bot.py
+│   ├── db
+│   │   ├── crud
+│   │   │   ├── channel.py
+│   │   │   ├── __init__.py
+│   │   │   └── user.py
+│   │   ├── __init__.py
+│   │   ├── migrations
+│   │   │   ├── env.py
+│   │   │   ├── script.py.mako
+│   │   │   └── versions
+│   │   ├── models.py
+│   │   └── session.py
+│   ├── __init__.py
+│   ├── plugins
+│   │   ├── add_channel.py
+│   │   ├── __init__.py
+│   │   └── start.py
+│   ├── src
+│   │   ├── __init__.py
+│   │   └── stats.py
+│   └── utils
+│       ├── helpers.py
+│       ├── __init__.py
+│       └── user_state.py
 ├── config.ini
 ├── main.py
-├── plugins
-│   ├── __pycache__
-│   └── start.py
-├── project_summary.py
-├── __pycache__
-│   └── clients.cpython-311.pyc
 ├── requirements.txt
 ├── sessions
-│   ├── bot.session
-│   └── userbot.session
+│   ├── bot.session
 └── venv_tg2
-    ├── bin
-    ├── include
-    ├── lib
-    ├── lib64 -> lib
-    └── pyvenv.cfg
 
 
-# Содержимое файлов:
 
-# === clients.py === 
+# Содержимое файлов: 
+
+
+# === app/bot.py === 
 from pyrogram import Client
 import configparser
+
+
 config = configparser.ConfigParser()
 config.read("config.ini")
+
+
 def create_bot():
     return Client(
         "bot",
@@ -39,6 +57,8 @@ def create_bot():
         plugins=dict(root=config["bot"]["plugins_root"]),
         workdir="sessions"
     )
+
+
 def create_userbot():
     return Client(
         "userbot",
@@ -50,21 +70,187 @@ def create_userbot():
 
 
 
-# === config.ini === 
-[bot]
-api_id = 17234028
-api_hash = 3da0b2c47cea6b694882c68d1aa421d4
-bot_token = 7908975988:AAFgREobEXIN_byz5x_N4bHuYx0yzPgy6Xs
-plugins_root = plugins
+# === app/db/crud/channel.py === 
+from pyrogram import Client
+from pyrogram.types import Message, ChatPrivileges
+from pyrogram.enums import ChatType
+from pyrogram.errors import UserNotParticipant, ChannelInvalid, PeerIdInvalid, RPCError
+from app.db.session import async_session
+from app.db.models import User, Channel
+from sqlalchemy import select
+import logging
+from app.utils.user_state import waiting_channel
 
-[userbot]
-api_id = 26870952
-api_hash = dcaafc1bfc49f1a34a87920a3932e22e
-plugins_root = plugins_user
+logger = logging.getLogger(__name__)
 
-[database]
-url_asyncpg = postgresql+asyncpg://postgres:111@localhost:5432/tgkaizen_db
-url_psycopg = postgresql+psycopg://postgres:111@localhost:5432/tgkaizen_db 
+
+async def process_channel_addition(client: Client, user_id: int, command_call=False, message: Message = None) -> str:
+    async with async_session() as session:
+
+        result = await session.execute(select(User).where(User.user_id == user_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            return "Сначала нажмите /start"
+
+        if command_call:
+            waiting_channel[user_id] = True
+            return "Перешлите сообщение из канала."
+
+        try:
+            chat = message.forward_from_chat
+            logger.info(f"CHAT: {chat}")
+            if not chat:
+                raise ValueError("Нет пересланного чата")
+
+            full_chat = await client.get_chat(chat.id)
+
+        except Exception as e:
+            logger.warning(f"Ошибка при получении канала: {e}")
+            return "❌ Ошибка при получении канала."
+
+        result = await session.execute(select(Channel).where(Channel.channel_id == full_chat.id))
+        already_linked = result.scalar_one_or_none()
+
+        if already_linked:
+            return f"Канал {full_chat.title} уже добавлен."
+
+        new_channel = Channel(
+            channel_id=full_chat.id,
+            title=full_chat.title,
+            user_id=user_id
+        )
+        session.add(new_channel)
+        await session.commit()
+
+
+        waiting_channel.pop(user_id, None)
+
+
+        return full_chat.title 
+
+
+
+# === app/db/crud/user.py === 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.models import User
+
+
+import logging
+logger = logging.getLogger(__name__)
+
+
+async def get_user(session: AsyncSession, user_id: int) -> User | None:
+    stmt = select(User).where(User.user_id == user_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def create_user(session: AsyncSession, user: User):
+    session.add(user)
+    await session.commit() 
+
+
+
+# === app/db/models.py === 
+from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
+from sqlalchemy import BigInteger, String, DateTime, ForeignKey, Boolean, UniqueConstraint, text
+from app.db.session import Base
+from datetime import datetime
+
+class User(Base):
+    __tablename__ = "users"
+    user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    first_name: Mapped[str] = mapped_column(String(128), nullable=True)
+    join_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
+
+    channels: Mapped[list["Channel"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+class Channel(Base):
+    __tablename__ = "channels"
+    channel_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    title: Mapped[str] = mapped_column(String(100))
+
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"))
+
+    user: Mapped["User"] = relationship(back_populates="channels")
+ 
+
+
+# === app/db/session.py === 
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.orm import DeclarativeBase
+import configparser
+
+config = configparser.ConfigParser()
+config.read("config.ini")
+
+DB_URL=config["database"]["url_asyncpg"]
+
+async_engine = create_async_engine(DB_URL, echo=True)
+async_session = async_sessionmaker(async_engine, expire_on_commit=False)
+
+class Base(DeclarativeBase):
+    pass 
+
+
+
+# === app/plugins/add_channel.py === 
+from pyrogram import Client, filters
+from pyrogram.types import Message
+from app.db.crud.channel import process_channel_addition
+from app.utils.user_state import waiting_channel
+
+import logging
+logger = logging.getLogger(__name__)
+
+@Client.on_message(filters.command("add_channel") & filters.private)
+async def cmd_add_channel(client: Client, message: Message):
+    user_id = message.from_user.id
+    logger.info(f"User {user_id} вызвал \add_channel.")
+    response = await process_channel_addition(client, user_id, command_call=True)
+    await message.reply_text(response)
+
+@Client.on_message(filters.private & filters.forwarded)
+async def receive_forwarded_channel_message(client: Client, message: Message):
+    user_id = message.from_user.id
+    if waiting_channel.get(user_id):
+        response = await process_channel_addition(client, user_id, message=message)
+        logger.info(f"User {user_id} отправил сообщение.")
+        await message.reply_text(response) 
+
+
+# === app/plugins/start.py === 
+from pyrogram import Client, filters
+from pyrogram.types import Message
+from app.db.session import async_session
+from app.db.models import User
+from app.db.crud.user import get_user, create_user
+
+import logging
+logger = logging.getLogger(__name__)
+
+@Client.on_message(filters.private & filters.command("start"))
+async def cmd_start(client: Client, message: Message):
+    user = message.from_user
+    first_name = message.from_user.first_name
+
+    logger.info(f"User {first_name} started the bot.")
+
+    async with async_session() as session:
+        existing = await get_user(session, user.id)
+        if not existing:
+            await create_user(session, User(
+                user_id=user.id,
+                first_name=user.first_name,
+            ))
+    await message.reply(f"Привет, \n{existing}!")
+
+
+
+# === app/utils/user_state.py === 
+waiting_channel: dict[int, bool] = {}
+
 
 
 
@@ -72,38 +258,14 @@ url_psycopg = postgresql+psycopg://postgres:111@localhost:5432/tgkaizen_db
 import asyncio
 from pyrogram import compose
 import logging
-from clients import create_bot, create_userbot
-
+from app.bot import create_bot, create_userbot
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-
 async def main():
     bot = create_bot()
     await compose([bot])
-asyncio.run(main()) 
+asyncio.run(main())
 
 
 
-# === plugins/start.py === 
-from pyrogram import Client, filters
-from pyrogram.types import Message
-import logging
-logger = logging.getLogger(__name__)
-@Client.on_message(filters.private & filters.command("start"))
-async def cmd_start(client: Client, message: Message):
-    user_id = message.from_user.id
-    first_name = message.from_user.first_name
-    logger.info(f"User {first_name} started the bot.")
-    await message.reply_text(f"Hi, {first_name}")
-
-
-
-
-Придумай структуру проекта, чтобы проект был гибкий, модульный и эффективный и компактный.
-Учти следующие моменты при разработке архитектуры проекта:
-- Таблицы будут храниться в PostgreSQL В БД 'tgkaizen_db'
-- Буду использовать SQLAlchemy (последнюю версию). Будут все операции с БД.
-- Позже подключу Alembic
-- Userbot пока не буду использовать. Пока только bot.
-- Будет много разных вспомогательных функций
-- Сессии клиентов хранятся в /sessions
-- Использую асинхронный подход
+Переделай мой учитывая следующие требования:
+1. 

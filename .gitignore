@@ -13,3 +13,6 @@ venv_tg2/
 
 # Логи
 *.log
+
+# TEMP
+bufer.txt

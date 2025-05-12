@@ -1,1 +1,0 @@
-waiting_channel: dict[int, bool] = {}
