@@ -3,6 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import User, Channel, Subscriber
 from typing import Optional
 from datetime import datetime
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import IntegrityError
+from app.logger import logger
+from sqlalchemy.exc import IntegrityError
+import traceback
 
 
 # --- Работа с пользователем ---
@@ -30,7 +35,12 @@ async def get_channel_by_id(session: AsyncSession, channel_id: int) -> Optional[
 
 
 async def add_channel(session: AsyncSession, channel_id: int, title: str, user_id: int, start_count_subs: int) -> Channel:
-    channel = Channel(channel_id=channel_id, title=title, user_id=user_id, start_count_subs=start_count_subs)
+    channel = Channel(
+        channel_id=channel_id, 
+        title=title, 
+        user_id=user_id, 
+        start_count_subs=start_count_subs
+    )
     session.add(channel)
     await session.commit()
     return channel
@@ -38,21 +48,49 @@ async def add_channel(session: AsyncSession, channel_id: int, title: str, user_i
 
 
 # --- Работа с подписчиками ---
-async def get_channel_start_count(session, channel_id: int) -> int:
-    result = await session.execute(
-        select(func.count()).select_from(Subscriber).where(Subscriber.channel_id == channel_id)
-    )
-    return result.scalar()
+
+# async def add_subscriber(session, channel_id: int, user):
+#     subscriber = Subscriber(
+#         channel_id=channel_id,
+#         user_id=user.id,
+#         first_name=user.first_name,
+#         phone_number=user.phone_number,
+#     )
+#     session.add(subscriber)
+#     await session.commit()
 
 
-async def add_subscriber(session, channel_id: int, user):
-    subscriber = Subscriber(
-        channel_id=channel_id,
-        user_id=user.id,
-        username=user.username,
-        invite_link=user.invite_link, # Ссылка, по которой подписчик подписался
-        phone_number=user.phone_number,
-        
-    )
-    session.add(subscriber)
-    await session.commit()
+# async def add_many_subscribers(subs_data: list[dict], session):
+#     if not subs_data:
+#         return 'NO DATA'
+
+#     try:
+#         stmt = pg_insert(Subscriber).values(subs_data)
+#         stmt = stmt.on_conflict_do_nothing(index_elements=['user_id', 'channel_id'])
+#         logger.info(f"stmt: {stmt}\n")
+#         await session.execute(stmt)
+#         # result = await session.execute(stmt, params=subs_data)
+#         # logger.info(f"Row count (inserted): {result.rowcount}")
+#         await session.commit()
+
+#     except IntegrityError:
+#         await session.rollback()
+
+
+async def add_many_subscribers(subs_data: list[dict], session):
+    if not subs_data:
+        return 'NO DATA'
+
+    try:
+        stmt = pg_insert(Subscriber).values(subs_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['user_id', 'channel_id'])
+        logger.info(f"stmt: {stmt}\n")
+        result = await session.execute(stmt, params=subs_data)
+        # logger.info(f"Row count (inserted): {result.rowcount}")
+        await session.commit()
+
+    except IntegrityError as e:
+        logger.error("IntegrityError occurred")
+        logger.error(str(e))
+        logger.error(traceback.format_exc())
+        await session.rollback()

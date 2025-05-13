@@ -1,8 +1,8 @@
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from app.db.session import async_session
-from app.db.crud import get_channel_by_id, get_channel_start_count
-from app.plugins.start import send_start_message
+from app.db.crud import get_channel_by_id
+from app.plgs.start import send_start_message
 from app.logger import logger
 
 
@@ -17,8 +17,6 @@ async def channel_info_handler(client: Client, callback: CallbackQuery):
             await callback.answer("Канал не найден.", show_alert=True)
             return
 
-        #start_count = await get_channel_start_count(session, channel_id)
-
         text = (
             f"✅ Канал <b>{channel.title}</b> успешно подключен.\n"
             f"<code>channel_id: {channel.channel_id}</code>\n"
@@ -26,7 +24,7 @@ async def channel_info_handler(client: Client, callback: CallbackQuery):
         )
 
         buttons = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📥 Спарсить подписчиков", callback_data=f"parse_subscribers:{channel_id}")],
+            [InlineKeyboardButton("📥 Спарсить подписчиков", callback_data="test")],
             [InlineKeyboardButton("🏠 Главное меню", callback_data="start")]
         ])
 

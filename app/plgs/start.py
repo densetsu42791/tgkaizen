@@ -10,7 +10,7 @@ async def send_start_message(client: Client, user_id: int):
     async with async_session() as session:
         db_user = await get_user_by_id(session, user_id)
         if not db_user:
-            return  # safety check
+            return
 
         channels = await get_user_channels(session, user_id)
         text = f"Hi, {db_user.first_name}"

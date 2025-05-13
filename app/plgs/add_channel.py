@@ -7,7 +7,7 @@ from app.db.crud import add_channel, get_user_by_id, get_channel_by_id
 from app.db.session import async_session
 from app.logger import logger
 
-from app.plugins.start import send_start_message  # Импортируем универсальную функцию
+from app.plgs.start import send_start_message  # Импортируем универсальную функцию
 
 
 @Client.on_callback_query(filters.regex("add_channel"))
