@@ -60,7 +60,7 @@ async def _fetch_users(channel_peer, filter_obj, seen_ids: set, collected: list)
         await asyncio.sleep(10)
 
 
-async def parsing_with_userbot(channel_id: int) -> str:
+async def parsing_with_userbot(channel_id: int) -> int:
     if userbot_client is None:
         raise RuntimeError("userbot_client не установлен.")
 
@@ -77,13 +77,13 @@ async def parsing_with_userbot(channel_id: int) -> str:
         await _fetch_users(peer, f, seen_ids, collected_subs)
 
     # Поиск по символам
-    for letter in LETTERS:
-        await _fetch_users(peer, ChannelParticipantsSearch(q=letter), seen_ids, collected_subs)
+    # for letter in LETTERS:
+    #     await _fetch_users(peer, ChannelParticipantsSearch(q=letter), seen_ids, collected_subs)
 
-    logger.info(f"✅ Всего собрано {len(collected_subs)} уникальных подписчиков.")
+    logger.info(f"Всего собрано {len(collected_subs)} уникальных подписчиков.")
     async with async_session() as session:
         await add_many_subscribers(subs_data=collected_subs, session=session)
-    return f"✅ Собрано и сохранено {len(collected_subs)} уникальных подписчиков."
+    return len(collected_subs)
 
 
 

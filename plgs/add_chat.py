@@ -72,7 +72,8 @@ async def handle_forwarded_channel(client: Client, message: Message):
         await message.reply(
             f"✅ Канал \"{full_chat_title}\" успешно добавлен!",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Перейти к каналу", callback_data=f"get_info_channel:{full_chat_id}")]
+                [InlineKeyboardButton("Перейти к каналу", callback_data=f"get_info_channel:{full_chat_id}")],
+                [InlineKeyboardButton("Главное меню", callback_data="start")]
             ])
         )
 

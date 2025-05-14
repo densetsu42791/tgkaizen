@@ -38,8 +38,8 @@ async def channel_info_handler(client: Client, callback: CallbackQuery):
     )
 
     buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📊 Парсинг", callback_data=f"parsing:{channel.channel_id}")],
-        [InlineKeyboardButton("🏠 Главное меню", callback_data="start")]
+        [InlineKeyboardButton("Парсинг", callback_data=f"parsing:{channel.channel_id}")],
+        [InlineKeyboardButton("Главное меню", callback_data="start")]
     ])
 
     await callback.message.edit_text(text, reply_markup=buttons)

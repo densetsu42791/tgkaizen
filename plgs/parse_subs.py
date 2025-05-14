@@ -1,8 +1,8 @@
 from pyrogram import Client, filters
-from pyrogram.types import Message, CallbackQuery
+from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from src.parse import parsing_with_userbot
 from utils.logger import logger
-from plgs.chat_info import channel_info_handler
+#from plgs.chat_info import channel_info_handler
 
 #CHANNEL_ID = -1001525422379  # TgKaizen channel
 
@@ -16,7 +16,15 @@ async def cb_parsing(client: Client, callback: CallbackQuery):
 
     try:
         result = await parsing_with_userbot(channel_id)
-        await callback.message.edit_text(result)
+
     except Exception as e:
         logger.exception("Ошибка при получении информации о пользователе:")
         await callback.message.edit_text("Произошла ошибка при обработке запроса.")
+
+    await callback.message.reply(
+            f"✅ Собрано и сохранено {result} уникальных подписчиков.",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Перейти к каналу", callback_data=f"get_info_channel:{channel_id}")],
+                [InlineKeyboardButton("Главное меню", callback_data="start")]
+            ])
+        )
