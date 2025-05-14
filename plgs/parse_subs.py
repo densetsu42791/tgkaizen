@@ -2,7 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from src.parse import parsing_with_userbot
 from utils.logger import logger
-#from plgs.chat_info import channel_info_handler
+
 
 #CHANNEL_ID = -1001525422379  # TgKaizen channel
 

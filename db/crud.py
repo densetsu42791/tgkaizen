@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from db.models import User, Channel, Subscriber
+from db.models import User, Channel, Subscriber, Activity
 from utils.logger import logger
 from typing import Optional
 import traceback
@@ -47,32 +47,34 @@ async def add_channel(session: AsyncSession, channel_id: int, title: str, user_i
 
 # --- Работа с подписчиками ---
 
-# async def add_subscriber(session, channel_id: int, user):
-#     subscriber = Subscriber(
-#         channel_id=channel_id,
-#         user_id=user.id,
-#         first_name=user.first_name,
-#         phone_number=user.phone_number,
-#     )
-#     session.add(subscriber)
-#     await session.commit()
+async def get_subscriber(session: AsyncSession, user_id: int, channel_id: int):
+    result = await session.execute(
+        select(Subscriber).where(Subscriber.user_id == user_id, Subscriber.channel_id == channel_id)
+    )
+    return result.scalar_one_or_none()
 
 
-# async def add_many_subscribers(subs_data: list[dict], session):
-#     if not subs_data:
-#         return 'NO DATA'
+async def add_subscriber(session: AsyncSession, user_id: int, first_name: str, invite_link: str, phone_number: str, channel_id: int):
+    subscriber = Subscriber(
+        user_id=user_id,
+        first_name=first_name,
+        invite_link=invite_link,
+        phone_number=phone_number,
+        channel_id=channel_id
+    )
+    session.add(subscriber)
+    await session.commit()
 
-#     try:
-#         stmt = pg_insert(Subscriber).values(subs_data)
-#         stmt = stmt.on_conflict_do_nothing(index_elements=['user_id', 'channel_id'])
-#         logger.info(f"stmt: {stmt}\n")
-#         await session.execute(stmt)
-#         # result = await session.execute(stmt, params=subs_data)
-#         # logger.info(f"Row count (inserted): {result.rowcount}")
-#         await session.commit()
 
-#     except IntegrityError:
-#         await session.rollback()
+async def log_subscriber_event(session: AsyncSession, user_id: int, channel_id: int, event_type: str):
+    event = Activity(
+        subscriber_id=user_id,
+        channel_id=channel_id,
+        activity=event_type,
+    )
+    session.add(event)
+    await session.commit()
+
 
 
 async def add_many_subscribers(subs_data: list[dict], session):
