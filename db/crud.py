@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -49,12 +49,15 @@ async def add_channel(session: AsyncSession, channel_id: int, title: str, user_i
 
 async def get_subscriber(session: AsyncSession, user_id: int, channel_id: int):
     result = await session.execute(
-        select(Subscriber).where(Subscriber.user_id == user_id, Subscriber.channel_id == channel_id)
+        select(Subscriber).where(
+            Subscriber.user_id == user_id,
+            Subscriber.channel_id == channel_id
+        )
     )
     return result.scalar_one_or_none()
 
-
-async def add_subscriber(session: AsyncSession, user_id: int, first_name: str, invite_link: str, phone_number: str, channel_id: int):
+async def add_subscriber(session: AsyncSession, user_id: int, first_name: str, invite_link: str,
+                         phone_number: str, channel_id: int):
     subscriber = Subscriber(
         user_id=user_id,
         first_name=first_name,
@@ -64,17 +67,24 @@ async def add_subscriber(session: AsyncSession, user_id: int, first_name: str, i
     )
     session.add(subscriber)
     await session.commit()
+    await session.refresh(subscriber)
+    return subscriber  # возвращаем объект, чтобы использовать subscriber.id
 
+async def update_left_at(session: AsyncSession, user_id: int, channel_id: int, left_at):
+    await session.execute(
+        update(Subscriber)
+        .where(Subscriber.user_id == user_id, Subscriber.channel_id == channel_id)
+        .values(left_at=left_at)
+    )
+    await session.commit()
 
-async def log_subscriber_event(session: AsyncSession, user_id: int, channel_id: int, event_type: str):
+async def log_subscriber_event(session: AsyncSession, subscriber_id: int, event_type: str):
     event = Activity(
-        subscriber_id=user_id,
-        channel_id=channel_id,
-        activity=event_type,
+        subscriber_id=subscriber_id,
+        activity=event_type
     )
     session.add(event)
     await session.commit()
-
 
 
 async def add_many_subscribers(subs_data: list[dict], session):

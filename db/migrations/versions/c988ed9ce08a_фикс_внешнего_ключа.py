@@ -1,8 +1,8 @@
-"""Добавил таблицу activities
+"""фикс внешнего ключа
 
-Revision ID: b3f81a45efe2
-Revises: b23116607b71
-Create Date: 2025-05-15 00:36:27.411007
+Revision ID: c988ed9ce08a
+Revises: 
+Create Date: 2025-05-15 17:42:06.754431
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'b3f81a45efe2'
-down_revision: Union[str, None] = 'b23116607b71'
+revision: str = 'c988ed9ce08a'
+down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -52,9 +52,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('timestamp', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.Column('activity', sa.Enum('SUBSCRIBED', 'UNSUBSCRIBED', name='activitytype'), nullable=False),
-    sa.Column('subscriber_id', sa.Integer(), nullable=False),
-    sa.Column('channel_id', sa.BigInteger(), nullable=False),
-    sa.ForeignKeyConstraint(['channel_id'], ['channels.channel_id'], ondelete='CASCADE'),
+    sa.Column('subscriber_id', sa.BigInteger(), nullable=False),
     sa.ForeignKeyConstraint(['subscriber_id'], ['subscribers.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )

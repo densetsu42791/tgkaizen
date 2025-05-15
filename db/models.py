@@ -26,11 +26,12 @@ class Channel(Base):
     channel_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     title: Mapped[str] = mapped_column(String(100))
     start_count_subs: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"))
     
     subscribers: Mapped[list["Subscriber"]] = relationship(back_populates="channel", cascade="all, delete-orphan")
     user: Mapped["User"] = relationship(back_populates="channels")
-    activities: Mapped[list["Activity"]] = relationship(back_populates="channel", cascade="all, delete-orphan")
+    #activities: Mapped[list["Activity"]] = relationship(back_populates="channel", cascade="all, delete-orphan")
 
 class Subscriber(Base):
     __tablename__ = "subscribers"
@@ -63,9 +64,9 @@ class Activity(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     activity: Mapped[ActivityType] = mapped_column(SQLAEnum(ActivityType))
 
-    subscriber_id: Mapped[int] = mapped_column(ForeignKey("subscribers.user_id", ondelete="CASCADE"))
-    channel_id: Mapped[int] = mapped_column(ForeignKey("channels.channel_id", ondelete="CASCADE"))
+    subscriber_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("subscribers.id", ondelete="CASCADE"))
+    # channel_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("channels.channel_id", ondelete="CASCADE"))
 
     subscriber: Mapped["Subscriber"] = relationship(back_populates="activities")
-    channel: Mapped["Channel"] = relationship(back_populates="activities")
+    # channel: Mapped["Channel"] = relationship(back_populates="activities")
 

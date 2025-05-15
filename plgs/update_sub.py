@@ -1,63 +1,72 @@
 from pyrogram import Client
 from pyrogram.types import ChatMemberUpdated
-from db.session import async_session
-from db.crud import get_subscriber, add_subscriber, log_subscriber_event
 from pyrogram.enums import ChatMemberStatus
+from db.session import async_session
+from db.crud import (
+    get_subscriber,
+    add_subscriber,
+    log_subscriber_event,
+    update_left_at
+)
+import datetime
+import traceback
+from db.models import ActivityType
+
+ADMIN_ID = 355527991
+
 
 @Client.on_chat_member_updated()
-async def handle_subscription(client: Client, chat_member_updated: ChatMemberUpdated):
-    print("✅ chat_member_updated triggered")
+async def handle_subscription_change(client: Client, chat_member_updated: ChatMemberUpdated):
+    print("🔔 chat_member_updated triggered")
 
-    new = chat_member_updated.new_chat_member
-    user = chat_member_updated.from_user
-    channel = chat_member_updated.chat
+    try:
+        old = chat_member_updated.old_chat_member
+        new = chat_member_updated.new_chat_member
+        user = chat_member_updated.from_user
+        chat = chat_member_updated.chat
 
-    print(f"NEW: {new}")
-    print(f"USER: {user}")
-    print(f"CHANNEL: {channel}")
+        if not user:
+            print("❗ Нет информации о пользователе.")
+            return
 
-    if not user or not new:
-        print("❗ Недостаточно данных: user или new отсутствует")
-        return
-    print("✅ if not user or not new")
-    user_id = user.id
-    first_name = user.first_name
-    channel_id = channel.id
-    phone_number = user.phone_number
+        user_id = user.id
+        first_name = user.first_name or "Пользователь"
+        channel_id = chat.id
+        phone_number = getattr(user, "phone_number", None)
+        invite_link = getattr(chat_member_updated, "invite_link", None)
+        invite_link_str = invite_link.invite_link if invite_link else None
 
-    if new.status in (ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR):
-        print("✅ if new.status in ...")
+        print(f"👤 Пользователь: {user_id}, Статус: {new.status if new else 'None'}, Канал: {channel_id}, Ссылка: {invite_link_str}")
+
         async with async_session() as session:
-            
-            subscriber = await get_subscriber(session, user_id, channel_id)
-            print(f"✅ SUBSCRIBER: {subscriber}")
-            if subscriber:
-                await client.send_message(chat_id=user_id, text=f"🔁 Повторная подписка: {first_name}")
+            # Подписка
+            if new and new.status == ChatMemberStatus.MEMBER:
+                subscriber = await get_subscriber(session, user_id, channel_id)
+                if subscriber:
+                    await client.send_message(chat_id=ADMIN_ID, text=f"🔁 Повторная подписка: {first_name}")
+                else:
+                    subscriber = await add_subscriber(
+                        session,
+                        user_id=user_id,
+                        first_name=first_name,
+                        invite_link=invite_link_str,
+                        channel_id=channel_id,
+                        phone_number=phone_number,
+                    )
+                    await client.send_message(chat_id=ADMIN_ID, text=f"🆕 Новый подписчик: {first_name}")
+                await log_subscriber_event(session, subscriber.id, ActivityType.SUBSCRIBED)
+
+            # Отписка
+            elif old and old.status in [ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR] and (not new or new.status == ChatMemberStatus.LEFT):
+                await update_left_at(session, user_id, channel_id, left_at=datetime.datetime.utcnow())
+                await client.send_message(chat_id=ADMIN_ID, text=f"📤 Вы отписались от канала: {chat.title}")
+                subscriber = await get_subscriber(session, user_id, channel_id)
+                if subscriber:
+                    await log_subscriber_event(session, subscriber.id, ActivityType.UNSUBSCRIBED)
+
             else:
-                await add_subscriber(session, user_id, first_name, invite_link=None, channel_id=channel_id, phone_number=phone_number)
-                await client.send_message(chat_id=user_id, text=f"🆕 Новый подписчик: {first_name}")
-            await log_subscriber_event(session, user_id, channel_id, event_type="SUBSCRIBED")
+                print(f"⚠️ Необработанное изменение статуса: OLD={old.status if old else 'None'} → NEW={new.status if new else 'None'}")
 
-
-
-
-@Client.on_chat_member_updated()
-async def handle_unsubscription(client: Client, chat_member_updated: ChatMemberUpdated):
-    print("🚫 chat_member_updated (unsub) triggered")
-
-    new = chat_member_updated.new_chat_member
-    user = chat_member_updated.from_user
-    channel = chat_member_updated.chat
-
-    if not user or not new:
-        print("❗ Недостаточно данных: user или new отсутствует")
-        return
-
-    user_id = user.id
-    first_name = user.first_name or "Пользователь"
-    channel_id = channel.id
-
-    if new.status in ("left", "kicked"):
-        async with async_session() as session:
-            await log_subscriber_event(session, user_id, channel_id, event_type="left")
-            await client.send_message(channel_id, f"📤 Отписка: {first_name}")
+    except Exception:
+        print("❌ Ошибка при обработке chat_member_updated:")
+        traceback.print_exc()
