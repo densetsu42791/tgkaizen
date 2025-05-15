@@ -12,6 +12,7 @@ import datetime
 import traceback
 from db.models import ActivityType
 
+
 ADMIN_ID = 355527991
 
 
@@ -43,7 +44,7 @@ async def handle_subscription_change(client: Client, chat_member_updated: ChatMe
             if new and new.status == ChatMemberStatus.MEMBER:
                 subscriber = await get_subscriber(session, user_id, channel_id)
                 if subscriber:
-                    await client.send_message(chat_id=ADMIN_ID, text=f"🔁 Повторная подписка: {first_name}")
+                    await client.send_message(chat_id=ADMIN_ID, text=f"Повторная подписка: {first_name}")
                 else:
                     subscriber = await add_subscriber(
                         session,
@@ -53,13 +54,13 @@ async def handle_subscription_change(client: Client, chat_member_updated: ChatMe
                         channel_id=channel_id,
                         phone_number=phone_number,
                     )
-                    await client.send_message(chat_id=ADMIN_ID, text=f"🆕 Новый подписчик: {first_name}")
+                    await client.send_message(chat_id=ADMIN_ID, text=f"{first_name} подписался на канал {chat.title}")
                 await log_subscriber_event(session, subscriber.id, ActivityType.SUBSCRIBED)
 
             # Отписка
             elif old and old.status in [ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR] and (not new or new.status == ChatMemberStatus.LEFT):
                 await update_left_at(session, user_id, channel_id, left_at=datetime.datetime.utcnow())
-                await client.send_message(chat_id=ADMIN_ID, text=f"📤 Вы отписались от канала: {chat.title}")
+                await client.send_message(chat_id=ADMIN_ID, text=f"{first_name} отписался от канала {chat.title}")
                 subscriber = await get_subscriber(session, user_id, channel_id)
                 if subscriber:
                     await log_subscriber_event(session, subscriber.id, ActivityType.UNSUBSCRIBED)
