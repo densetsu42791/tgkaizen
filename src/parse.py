@@ -8,7 +8,7 @@ from pyrogram.raw.types import (
 )
 from utils.logger import logger
 from db.crud import add_many_subscribers
-from db.session import async_session
+from db.async_session import async_session
 import asyncio
 
 

@@ -2,7 +2,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
 from sqlalchemy import BigInteger, String, DateTime, ForeignKey, Boolean, UniqueConstraint, text
 from sqlalchemy import Enum as SQLAEnum
 from enum import Enum
-from db.session import Base
+from db.async_session import Base
 from datetime import datetime
 
 

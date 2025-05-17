@@ -3,7 +3,7 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
 from utils.user_context import set_state, get_state, clear_state
 from db.crud import add_channel, get_user_by_id, get_channel_by_id
-from db.session import async_session
+from db.async_session import async_session
 from utils.logger import logger
 
 

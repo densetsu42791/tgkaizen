@@ -56,6 +56,7 @@ async def get_subscriber(session: AsyncSession, user_id: int, channel_id: int):
     )
     return result.scalar_one_or_none()
 
+
 async def add_subscriber(session: AsyncSession, user_id: int, first_name: str, invite_link: str,
                          phone_number: str, channel_id: int):
     subscriber = Subscriber(
@@ -68,7 +69,8 @@ async def add_subscriber(session: AsyncSession, user_id: int, first_name: str, i
     session.add(subscriber)
     await session.commit()
     await session.refresh(subscriber)
-    return subscriber  # возвращаем объект, чтобы использовать subscriber.id
+    return subscriber
+
 
 async def update_left_at(session: AsyncSession, user_id: int, channel_id: int, left_at):
     await session.execute(
@@ -77,6 +79,7 @@ async def update_left_at(session: AsyncSession, user_id: int, channel_id: int, l
         .values(left_at=left_at)
     )
     await session.commit()
+
 
 async def log_subscriber_event(session: AsyncSession, subscriber_id: int, event_type: str):
     event = Activity(

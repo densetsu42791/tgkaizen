@@ -3,7 +3,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from db.crud import get_user_by_id, create_user, get_user_channels
-from db.session import async_session
+from db.async_session import async_session
 from utils.logger import logger
 from utils.user_context import set_state
 

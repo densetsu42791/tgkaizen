@@ -4,3 +4,4 @@ SQLAlchemy
 asyncpg
 alembic
 psycopg
+apscheduler

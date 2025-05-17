@@ -2,7 +2,7 @@
 
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from db.session import async_session
+from db.async_session import async_session
 from db.crud import get_channel_by_id
 from utils.logger import logger
 
@@ -39,6 +39,7 @@ async def channel_info_handler(client: Client, callback: CallbackQuery):
 
     buttons = InlineKeyboardMarkup([
         [InlineKeyboardButton("Парсинг", callback_data=f"parsing:{channel.channel_id}")],
+        [InlineKeyboardButton("Отчёт", callback_data=f"report:{channel.channel_id}")],
         [InlineKeyboardButton("Главное меню", callback_data="start")]
     ])
 

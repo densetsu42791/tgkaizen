@@ -1,7 +1,7 @@
 from pyrogram import Client
 from pyrogram.types import ChatMemberUpdated
 from pyrogram.enums import ChatMemberStatus
-from db.session import async_session
+from db.async_session import async_session
 from db.crud import (
     get_subscriber,
     add_subscriber,

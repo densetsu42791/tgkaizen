@@ -4,8 +4,6 @@ from src.parse import parsing_with_userbot
 from utils.logger import logger
 
 
-#CHANNEL_ID = -1001525422379  # TgKaizen channel
-
 @Client.on_callback_query(filters.regex(r"^parsing:[\w\-]+$"))
 async def cb_parsing(client: Client, callback: CallbackQuery):
     user_id = callback.from_user.id
