@@ -1,3 +1,4 @@
+# src/parse.py
 from pyrogram import Client
 from pyrogram.enums import ChatType
 from pyrogram.raw.functions.channels import GetParticipants
@@ -7,7 +8,7 @@ from pyrogram.raw.types import (
     ChannelParticipantsRecent, ChannelParticipantsSearch
 )
 from utils.logger import logger
-from db.crud import add_many_subscribers
+from db.crud import add_subscriber
 from db.async_session import async_session
 import asyncio
 
@@ -23,7 +24,6 @@ FILTERS = [
     ChannelParticipantsRecent(),
 ]
 
-
 userbot_client: Client = None
 
 def set_userbot_client(client: Client):
@@ -31,7 +31,7 @@ def set_userbot_client(client: Client):
     userbot_client = client
 
 
-async def _fetch_users(channel_peer, filter_obj, seen_ids: set, collected: list) -> None:
+async def _fetch_users(channel_peer, filter_obj, seen_ids: set, channel_chat, collected: list) -> None:
     offset, limit = 0, 100
     while True:
         result = await userbot_client.invoke(
@@ -41,16 +41,31 @@ async def _fetch_users(channel_peer, filter_obj, seen_ids: set, collected: list)
         if not result.users:
             break
 
-        for user in result.users:
-            if user.id not in seen_ids:
-                seen_ids.add(user.id)
-                collected.append({
-                    "user_id": user.id,
-                    "first_name": user.first_name,
-                    "invite_link": getattr(user, 'invite_link', None),
-                    "phone_number": getattr(user, "phone", None),
-                    "channel_id": int(f"-100{channel_peer.channel_id}"),
-                })
+        async with async_session() as session:
+            for raw_user in result.users:
+                if raw_user.id in seen_ids:
+                    continue
+                seen_ids.add(raw_user.id)
+
+                try:
+                    # Получаем полноценного пользователя через get_users
+                    user = await userbot_client.get_users(raw_user.id)
+
+                    class FakeChatMemberUpdated:
+                        new_chat_member = None
+                        invite_link = getattr(raw_user, 'invite_link', None)
+
+                    subscriber = await add_subscriber(
+                        session=session,
+                        user=user,
+                        chat=channel_chat,
+                        chat_member_updated=FakeChatMemberUpdated()
+                    )
+                    collected.append(subscriber)
+
+                except Exception as e:
+                    logger.error(f"Ошибка при добавлении пользователя {raw_user.id}: {e}")
+
 
         offset += len(result.users)
         logger.info(f"→ {filter_obj.__class__.__name__}: получено {len(result.users)} | всего: {len(collected)}")
@@ -72,20 +87,8 @@ async def parsing_with_userbot(channel_id: int) -> int:
     peer = await userbot_client.resolve_peer(channel_id)
     collected_subs, seen_ids = [], set()
 
-    # Проход по основным фильтрам
     for f in FILTERS:
-        await _fetch_users(peer, f, seen_ids, collected_subs)
-
-    # Поиск по символам
-    # for letter in LETTERS:
-    #     await _fetch_users(peer, ChannelParticipantsSearch(q=letter), seen_ids, collected_subs)
+        await _fetch_users(peer, f, seen_ids, chat, collected_subs)
 
     logger.info(f"Всего собрано {len(collected_subs)} уникальных подписчиков.")
-    async with async_session() as session:
-        await add_many_subscribers(subs_data=collected_subs, session=session)
     return len(collected_subs)
-
-
-
-
-

@@ -19,7 +19,6 @@ ADMIN_ID = 355527991
 @Client.on_chat_member_updated()
 async def handle_subscription_change(client: Client, chat_member_updated: ChatMemberUpdated):
     print("🔔 chat_member_updated triggered")
-
     try:
         old = chat_member_updated.old_chat_member
         new = chat_member_updated.new_chat_member
@@ -33,11 +32,6 @@ async def handle_subscription_change(client: Client, chat_member_updated: ChatMe
         user_id = user.id
         first_name = user.first_name or "Пользователь"
         channel_id = chat.id
-        phone_number = getattr(user, "phone_number", None)
-        invite_link = getattr(chat_member_updated, "invite_link", None)
-        invite_link_str = invite_link.invite_link if invite_link else None
-
-        print(f"👤 Пользователь: {user_id}, Статус: {new.status if new else 'None'}, Канал: {channel_id}, Ссылка: {invite_link_str}")
 
         async with async_session() as session:
             # Подписка
@@ -46,14 +40,7 @@ async def handle_subscription_change(client: Client, chat_member_updated: ChatMe
                 if subscriber:
                     await client.send_message(chat_id=ADMIN_ID, text=f"Повторная подписка: {first_name}")
                 else:
-                    subscriber = await add_subscriber(
-                        session,
-                        user_id=user_id,
-                        first_name=first_name,
-                        invite_link=invite_link_str,
-                        channel_id=channel_id,
-                        phone_number=phone_number,
-                    )
+                    subscriber = await add_subscriber(session, user, chat, chat_member_updated)
                     await client.send_message(chat_id=ADMIN_ID, text=f"{first_name} подписался на канал {chat.title}")
                 await log_subscriber_event(session, subscriber.id, ActivityType.SUBSCRIBED)
 
@@ -64,7 +51,6 @@ async def handle_subscription_change(client: Client, chat_member_updated: ChatMe
                 subscriber = await get_subscriber(session, user_id, channel_id)
                 if subscriber:
                     await log_subscriber_event(session, subscriber.id, ActivityType.UNSUBSCRIBED)
-
             else:
                 print(f"⚠️ Необработанное изменение статуса: OLD={old.status if old else 'None'} → NEW={new.status if new else 'None'}")
 
