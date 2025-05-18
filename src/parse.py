@@ -11,9 +11,16 @@ from utils.logger import logger
 from db.crud import add_subscriber
 from db.async_session import async_session
 import asyncio
+from string import ascii_lowercase, digits
 
 
-LETTERS = list("абвгдеёжзийклмнопрстуфхцчшщьыэюяabcdefghijklmnopqrstuvwxyz0123456789")
+# Основной алфавит + английские буквы + цифры
+LETTERS = list("абвгдеёжзийклмнопрстуфхцчшщьыэюя") + list(ascii_lowercase) + list(digits)
+
+# Дополнительные символы, которые могут быть в именах или юзернеймах
+EXTRA_SYMBOLS = list("_-. ")
+LETTERS += EXTRA_SYMBOLS
+
 FILTERS = [
     ChannelParticipantsAdmins(),
     ChannelParticipantsBanned(q=''),
@@ -87,8 +94,22 @@ async def parsing_with_userbot(channel_id: int) -> int:
     peer = await userbot_client.resolve_peer(channel_id)
     collected_subs, seen_ids = [], set()
 
+    # Проход по основным фильтрам
     for f in FILTERS:
         await _fetch_users(peer, f, seen_ids, chat, collected_subs)
+
+    # Поиск по всем символам
+    for symbol in LETTERS:
+        before = len(collected_subs)
+        await _fetch_users(peer, ChannelParticipantsSearch(q=symbol), seen_ids, chat, collected_subs)
+        added = len(collected_subs) - before
+        logger.info(f"Символ '{symbol}' добавил {added} новых подписчиков")
+
+    # Пустой поиск как дополнительная попытка
+    logger.info("Выполняем пустой ChannelParticipantsSearch для добора")
+    before = len(collected_subs)
+    await _fetch_users(peer, ChannelParticipantsSearch(q=''), seen_ids, chat, collected_subs)
+    logger.info(f"Пустой поиск добавил {len(collected_subs) - before} новых подписчиков")
 
     logger.info(f"Всего собрано {len(collected_subs)} уникальных подписчиков.")
     return len(collected_subs)
