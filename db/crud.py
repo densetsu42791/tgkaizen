@@ -2,11 +2,12 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from db.models import User as DBUser, Channel, Subscriber, Activity
+from db.models import User as DBUser, Channel, Subscriber, Activity, DailyMetric
 from utils.logger import logger
 from typing import Optional
 from datetime import datetime
 from pyrogram.types import User, Chat, ChatMemberUpdated
+# from src.metrics import calculate_daily_metrics
 
 
 # === Пользователь в БД ===
@@ -134,9 +135,9 @@ async def update_left_at(session: AsyncSession, user_id: int, channel_id: int, l
     await session.commit()
 
 
-async def log_subscriber_event(session: AsyncSession, subscriber: Subscriber, event_type: str):
+async def log_subscriber_event(session: AsyncSession, subscriber_id: int, event_type: str):
     event = Activity(
-        subscriber_id=subscriber.id,
+        subscriber_id=subscriber_id,
         activity=event_type
     )
     session.add(event)
@@ -163,3 +164,15 @@ async def add_many_subscribers(subs_data: list[dict], session: AsyncSession):
         import traceback
         logger.error(traceback.format_exc())
         await session.rollback()
+
+
+# === МЕТРИКИ ===
+
+# async def save_daily_metric(db: AsyncSession, channel_id: int, subscriber_count: int, date: date):
+#     metric = DailyMetric(
+#         channel_id=channel_id,
+#         subscriber_count=subscriber_count,
+#         date=date
+#     )
+#     db.add(metric)
+#     await db.commit()

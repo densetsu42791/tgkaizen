@@ -43,6 +43,7 @@ class Channel(Base):
     
     user: Mapped["User"] = relationship(back_populates="channels")
     subscribers: Mapped[list["Subscriber"]] = relationship(back_populates="channel", cascade="all, delete-orphan")
+    daily_metrics = relationship("DailyMetric", back_populates="channel")
     
 
 class Subscriber(Base):
@@ -52,7 +53,6 @@ class Subscriber(Base):
     user_id: Mapped[int] = mapped_column(BigInteger)
     first_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     username: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    first_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     invite_link: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -104,3 +104,15 @@ class Activity(Base):
     subscriber: Mapped["Subscriber"] = relationship(back_populates="activities")
 
 
+class DailyMetric(Base):
+    __tablename__ = 'daily_metrics'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
+    subs_total: Mapped[int] = mapped_column(BigInteger)
+    subs_today: Mapped[int] = mapped_column(BigInteger)
+    unsubs_today: Mapped[int] = mapped_column(BigInteger)
+
+    channel_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("channels.channel_id", ondelete="CASCADE"))
+
+    channel = relationship("Channel", back_populates="daily_metrics")
