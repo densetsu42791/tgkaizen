@@ -56,3 +56,42 @@ typing_extensions       4.13.2
 tzdata                  2025.2
 tzlocal                 5.3.1
 wcwidth                 0.2.13
+
+
+
+.
+├── alembic.ini
+├── clients.py
+├── config.ini
+├── db
+│   ├── async_session.py
+│   ├── crud.py
+│   ├── __init__.py
+│   ├── migrations
+│   ├── models.py
+├── main.py
+├── plgs
+│   ├── add_chat.py
+│   ├── chat_info.py
+│   ├── parse_subs.py
+│   ├── report.py
+│   ├── start.py
+│   ├── test.py
+│   └── update_sub.py
+├── plgs_user
+│   ├── __init__.py
+│   ├── parse_userbot.py
+│   ├── plgs_us.py
+├── requirements.txt
+├── sessions
+├── src
+│   ├── __init__.py
+│   ├── parse.py
+│   ├── report.py
+│   ├── scheduler.py
+├── utils
+│   ├── helpers.py
+│   ├── __init__.py
+│   ├── logger.py
+│   └── user_context.py
+├── venv_tg
