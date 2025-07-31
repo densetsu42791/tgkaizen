@@ -3,5 +3,6 @@ TgCrypto
 SQLAlchemy
 asyncpg
 alembic
+apscheduler  # APScheduler
 psycopg
-apscheduler
+psycopg2-binary
