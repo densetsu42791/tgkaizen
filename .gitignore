@@ -9,10 +9,13 @@ __pycache__/
 *.pyc
 
 # Виртуальное окружение
-venv_tg2/
+venv_tg/
 
 # Логи
 *.log
 
 # TEMP
 bufer.txt
+
+
+LEETCODE.ipynb
